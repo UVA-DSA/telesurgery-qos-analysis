@@ -582,7 +582,12 @@ def analyze_experiment_data(experiment_dir: str, output_dir: str):
                 save_results_to_excel(results, output_dir, condition, scenario)
                 
 
-    os.system(f"python analyze_no_fault.py --scenario_dir {experiment_dir} --output_dir {output_dir}")
+    # Get the absolute path to analyze_no_fault.py in the same directory as this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    analyze_no_fault_path = os.path.join(script_dir, "analyze_no_fault.py")
+    
+    # Execute the script with absolute paths
+    os.system(f"python {analyze_no_fault_path} --scenario_dir {experiment_dir} --output_dir {output_dir}")
 
 if __name__ == "__main__":
     import argparse
