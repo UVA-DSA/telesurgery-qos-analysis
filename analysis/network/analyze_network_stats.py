@@ -522,7 +522,7 @@ def analyze_experiment_data(experiment_dir: str, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     
     # Process each condition including no_fault
-    conditions = ['packet_loss', 'communication_loss', 'delay', 'no_fault']
+    conditions = ['packet_loss', 'communication_loss', 'delay']
     
     for condition in conditions:
         condition_dir = os.path.join(experiment_dir, condition)
@@ -581,9 +581,8 @@ def analyze_experiment_data(experiment_dir: str, output_dir: str):
                 # Save results
                 save_results_to_excel(results, output_dir, condition, scenario)
                 
-            elif condition == 'no_fault':
-                # Read received data file path
-                os.system(f"python analyze_no_fault.py --scenario_dir {scenario_dir} --output_dir {output_dir}")
+
+    os.system(f"python analyze_no_fault.py --scenario_dir {experiment_dir} --output_dir {output_dir}")
 
 if __name__ == "__main__":
     import argparse
