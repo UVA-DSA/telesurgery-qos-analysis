@@ -3,7 +3,8 @@ import json
 import cv2
 import argparse
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Set
+import os
 
 class AnnotationProcessor:
     def __init__(self, csv_path: str, video_path: str):
@@ -13,6 +14,7 @@ class AnnotationProcessor:
         self.video_duration = self._get_video_duration()
         self.annotations = []
         self.attribute_mappings = {}
+        self.annotation_type_mapping = {}
         
     def _get_video_fps(self) -> float:
         cap = cv2.VideoCapture(self.video_path)
@@ -37,6 +39,10 @@ class AnnotationProcessor:
         self.attribute_mappings = json.loads(attribute_line.replace('# ATTRIBUTE = ', ''))
         print("Parsed attribute mappings")
         
+        # Create mapping for annotation type (MP or Error)
+        for option_id, option_value in self.attribute_mappings.get('6', {}).get('options', {}).items():
+            self.annotation_type_mapping[option_id] = option_value
+        
         # Parse annotations
         reader = csv.reader(lines[10:])  # Skip header lines
         annotation_count = 0
@@ -48,10 +54,14 @@ class AnnotationProcessor:
             temporal = json.loads(temporal_coords)
             metadata = json.loads(metadata)
             
+            # Add annotation type to each annotation
+            annotation_type = self.annotation_type_mapping.get(metadata.get('6', '0'), 'MP')
+            
             self.annotations.append({
                 'start_time': temporal[0],
                 'end_time': temporal[1],
-                'metadata': metadata
+                'metadata': metadata,
+                'type': annotation_type
             })
             annotation_count += 1
         
@@ -59,46 +69,74 @@ class AnnotationProcessor:
         
     def fill_gaps(self):
         print("Filling gaps between annotations...")
-        # Sort annotations by start time
-        self.annotations.sort(key=lambda x: x['start_time'])
+        # Process MP and Error annotations separately
+        mp_annotations = [ann for ann in self.annotations if ann['type'] == 'MP']
+        error_annotations = [ann for ann in self.annotations if ann['type'] == 'Error']
         
-        # Extend first annotation to start of video
-        if self.annotations[0]['start_time'] > 0:
-            print(f"Extending first annotation from {self.annotations[0]['start_time']} to 0")
-            self.annotations[0]['start_time'] = 0
+        # Process MP annotations
+        if mp_annotations:
+            # Sort annotations by start time
+            mp_annotations.sort(key=lambda x: x['start_time'])
             
-        # Fill gaps between annotations
-        gap_count = 0
-        for i in range(len(self.annotations) - 1):
-            if self.annotations[i]['end_time'] < self.annotations[i + 1]['start_time']:
-                gap_count += 1
-                self.annotations[i]['end_time'] = self.annotations[i + 1]['start_time']
+            # Extend first annotation to start of video
+            if mp_annotations[0]['start_time'] > 0:
+                print(f"Extending first MP annotation from {mp_annotations[0]['start_time']} to 0")
+                mp_annotations[0]['start_time'] = 0
                 
-        # Extend last annotation to end of video
-        if self.annotations[-1]['end_time'] < self.video_duration:
-            print(f"Extending last annotation from {self.annotations[-1]['end_time']} to {self.video_duration}")
-            self.annotations[-1]['end_time'] = self.video_duration
+            # Fill gaps between annotations
+            gap_count = 0
+            for i in range(len(mp_annotations) - 1):
+                if mp_annotations[i]['end_time'] < mp_annotations[i + 1]['start_time']:
+                    gap_count += 1
+                    mp_annotations[i]['end_time'] = mp_annotations[i + 1]['start_time']
+                    
+            # Extend last annotation to end of video
+            if mp_annotations[-1]['end_time'] < self.video_duration:
+                print(f"Extending last MP annotation from {mp_annotations[-1]['end_time']} to {self.video_duration}")
+                mp_annotations[-1]['end_time'] = self.video_duration
+            
+            print(f"Filled {gap_count} gaps between MP annotations")
         
-        print(f"Filled {gap_count} gaps between annotations")
+        # Update the annotations list
+        self.annotations = mp_annotations + error_annotations
         
-    def get_annotation_for_frame(self, frame_time: float) -> Optional[dict]:
+    def get_annotation_for_frame(self, frame_time: float, annotation_type: str = 'MP') -> Optional[dict]:
         for ann in self.annotations:
-            if ann['start_time'] <= frame_time <= ann['end_time']:
+            if ann['type'] == annotation_type and ann['start_time'] <= frame_time <= ann['end_time']:
                 return ann
         return None
     
     def format_mp_field(self, verb: str, instrument: str, peg: str, pole: str) -> str:
+        # Extract base pole name without _S or _G suffix
+        base_pole = pole.split('_')[0] if pole else ''
+        
         if verb in ['Touch', 'Untouch']:
             if pole:
-                return f"{verb}({peg}, {pole})"
+                return f"{verb}({peg}, {base_pole})"
             return f"{verb}({instrument}, {peg})"
         elif verb in ['Release', 'Grasp']:
             return f"{verb}({instrument}, {peg})"
         return "Idle"
     
-    def generate_frame_annotations(self) -> List[Dict]:
+    def parse_error_types(self, error_str: str) -> List[str]:
+        if not error_str:
+            return ["NO_ERROR"]
+        
+        # Handle comma-separated error IDs
+        error_ids = error_str.split(',')
+        error_types = []
+        
+        for error_id in error_ids:
+            error_type = self.attribute_mappings['5']['options'].get(error_id.strip(), '')
+            if error_type:
+                error_types.append(error_type)
+        
+        return error_types if error_types else ["NO_ERROR"]
+    
+    def generate_frame_annotations(self) -> Tuple[List[Dict], List[Dict]]:
         print("Generating frame-by-frame annotations...")
-        frame_annotations = []
+        mp_frame_annotations = []
+        error_frame_annotations = []
         total_frames = int(self.video_duration * self.fps)
         
         print(f"Processing {total_frames} frames...")
@@ -107,41 +145,96 @@ class AnnotationProcessor:
                 print(f"Processing frame {frame_id}/{total_frames} ({(frame_id/total_frames*100):.1f}%)")
             
             frame_time = frame_id / self.fps
-            ann = self.get_annotation_for_frame(frame_time)
+            mp_ann = self.get_annotation_for_frame(frame_time, 'MP')
+            error_ann = self.get_annotation_for_frame(frame_time, 'Error')
             
-            if ann:
-                metadata = ann['metadata']
+            # Process MP annotation
+            if mp_ann:
+                metadata = mp_ann['metadata']
                 
                 # Get string values for each attribute
                 verb = self.attribute_mappings['4']['options'].get(metadata.get('4', '4'), 'Idle')
                 instrument = self.attribute_mappings['3']['options'].get(metadata.get('3', ''), '')
                 peg = self.attribute_mappings['1']['options'].get(metadata.get('1', ''), '')
                 pole = self.attribute_mappings['2']['options'].get(metadata.get('2', ''), '')
-                error = self.attribute_mappings['5']['options'].get(metadata.get('5', ''), '')
+                error_ids = metadata.get('5', '')
+                error_types = self.parse_error_types(error_ids)
+                failure = self.attribute_mappings['7']['options'].get(metadata.get('7', ''), '')
                 
                 mp = self.format_mp_field(verb, instrument, peg, pole)
                 
-                frame_annotations.append({
+                mp_frame_annotations.append({
                     'frame_id': frame_id,
                     'verb': verb,
                     'instrument': instrument,
                     'peg': peg,
                     'pole': pole,
-                    'error': error,
+                    'error_type': ';'.join(error_types),
+                    'failure': failure,
                     'mp': mp
                 })
+                
+                # Also add to error annotations if there's an error in MP track
+                if error_ids and error_types != ["NO_ERROR"]:
+                    error_frame_annotations.append({
+                        'frame_id': frame_id,
+                        'error_type': ';'.join(error_types),
+                        'failure': failure,
+                        'source': 'MP'
+                    })
+            
+            # Process Error annotation
+            if error_ann:
+                metadata = error_ann['metadata']
+                error_ids = metadata.get('5', '')
+                error_types = self.parse_error_types(error_ids)
+                failure = self.attribute_mappings['7']['options'].get(metadata.get('7', ''), '')
+                
+                error_frame_annotations.append({
+                    'frame_id': frame_id,
+                    'error_type': ';'.join(error_types),
+                    'failure': failure,
+                    'source': 'Error'
+                })
+            # If no error annotation exists but we need to fill the frame
+            elif not any(e['frame_id'] == frame_id for e in error_frame_annotations):
+                error_frame_annotations.append({
+                    'frame_id': frame_id,
+                    'error_type': 'NO_ERROR',
+                    'failure': '',
+                    'source': ''
+                })
         
-        print(f"Generated annotations for {len(frame_annotations)} frames")
-        return frame_annotations
+        print(f"Generated MP annotations for {len(mp_frame_annotations)} frames")
+        print(f"Generated Error annotations for {len(error_frame_annotations)} frames")
+        return mp_frame_annotations, error_frame_annotations
     
-    def save_csv(self, frame_annotations: List[Dict], output_path: str):
+    def save_csv(self, frame_annotations: List[Dict], output_path: str, fieldnames: List[str]):
         print(f"Saving frame annotations to CSV: {output_path}")
-        fieldnames = ['frame_id', 'verb', 'instrument', 'peg', 'pole', 'error', 'mp']
         with open(output_path, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(frame_annotations)
         print("CSV file saved successfully")
+    
+    def get_pole_base_color(self, pole_name: str) -> Tuple[str, str]:
+        """Extract base color and type (start/goal) from pole name"""
+        if not pole_name or '_' not in pole_name:
+            return pole_name, ""
+        
+        parts = pole_name.split('_')
+        base_color = parts[0]
+        pole_type = parts[1]
+        
+        return base_color, pole_type
+    
+    def get_pole_type_symbol(self, pole_type: str) -> str:
+        """Get symbol for pole type"""
+        if pole_type == 'S':
+            return "(Start)"
+        elif pole_type == 'G':
+            return "(Goal)"
+        return ""
         
     def create_annotated_video(self, frame_annotations: List[Dict], output_path: str):
         print(f"Creating annotated video: {output_path}")
@@ -162,11 +255,29 @@ class AnnotationProcessor:
             'Blue': (255, 0, 0)       # BGR for Blue
         }
         
-        black = (0, 0, 0)  # BGR for Black
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.7
+        # Define better text colors
+        text_colors = {
+            'header': (51, 51, 51),        # Dark gray for headers
+            'value': (0, 0, 0),            # Black for values
+            'error': (0, 0, 255),          # Red for error labels
+            'failure': (0, 0, 128)         # Dark red for failure
+        }
+        
+        # Define better fonts and styling
+        main_font = cv2.FONT_HERSHEY_SIMPLEX
+        header_font = cv2.FONT_HERSHEY_DUPLEX
+        title_font_scale = 0.8
+        header_font_scale = 0.7
+        value_font_scale = 0.75
         thickness = 2
-        y_offset = 30
+        thin_thickness = 1
+        
+        # Panel settings - increase width by 25%
+        panel_margin = 10
+        panel_padding = 10
+        panel_width = 500  # Increased from 340 (340 * 1.25 = 425)
+        line_height = 32
+        header_width = 110
         
         total_frames = len(frame_annotations)
         frame_idx = 0
@@ -182,40 +293,145 @@ class AnnotationProcessor:
             
             ann = frame_annotations[frame_idx]
             
-            # Add text annotations
-            # Verb (black)
-            cv2.putText(frame, f"Verb: {ann['verb']}", (10, y_offset), 
-                       font, font_scale, black, thickness)
+            # Calculate panel height based on content
+            panel_height = 260  # Base height
             
-            # Instrument (black)
-            cv2.putText(frame, f"Instrument: {ann['instrument']}", (10, y_offset * 2),
-                       font, font_scale, black, thickness)
+            # Add height for errors if present
+            if 'error_type' in ann and ann['error_type'] != 'NO_ERROR':
+                error_types = ann['error_type'].split(';')
+                panel_height += len(error_types) * line_height
             
-            # Peg (label in black, value in corresponding color)
-            cv2.putText(frame, "Peg: ", (10, y_offset * 3),
-                       font, font_scale, black, thickness)
+            # Add height for failure if present
+            if 'failure' in ann and ann['failure']:
+                panel_height += line_height
+                
+            # Create semi-transparent overlay panel
+            overlay = frame.copy()
+            cv2.rectangle(overlay, 
+                         (panel_margin, panel_margin), 
+                         (panel_margin + panel_width, panel_margin + panel_height), 
+                         (240, 240, 240), -1)  # Light gray background
+            
+            # Apply transparency
+            alpha = 0.85
+            cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+            
+            # Add panel border
+            cv2.rectangle(frame, 
+                         (panel_margin, panel_margin), 
+                         (panel_margin + panel_width, panel_margin + panel_height), 
+                         (100, 100, 100), 1)  # Gray border
+            
+            # Add title
+            cv2.putText(frame, "Annotation Data", 
+                       (panel_margin + panel_padding, panel_margin + panel_padding + 20), 
+                       header_font, title_font_scale, 
+                       text_colors['header'], thickness)
+            
+            # Current Y position for text
+            y_pos = panel_margin + panel_padding + 60
+            
+            # Verb
+            cv2.putText(frame, "Verb:", 
+                      (panel_margin + panel_padding, y_pos), 
+                      main_font, header_font_scale, 
+                      text_colors['header'], thin_thickness)
+            cv2.putText(frame, ann['verb'], 
+                      (panel_margin + panel_padding + header_width, y_pos), 
+                      main_font, value_font_scale, 
+                      text_colors['value'], thickness)
+            y_pos += line_height
+            
+            # Instrument
+            cv2.putText(frame, "Instrument:", 
+                      (panel_margin + panel_padding, y_pos), 
+                      main_font, header_font_scale, 
+                      text_colors['header'], thin_thickness)
+            cv2.putText(frame, ann['instrument'], 
+                      (panel_margin + panel_padding + header_width, y_pos), 
+                      main_font, value_font_scale, 
+                      text_colors['value'], thickness)
+            y_pos += line_height
+            
+            # Peg
+            cv2.putText(frame, "Peg:", 
+                      (panel_margin + panel_padding, y_pos), 
+                      main_font, header_font_scale, 
+                      text_colors['header'], thin_thickness)
             if ann['peg']:
-                peg_color = color_map.get(ann['peg'], black)
+                peg_color = color_map.get(ann['peg'], text_colors['value'])
                 cv2.putText(frame, ann['peg'], 
-                           (10 + int(font_scale * 70), y_offset * 3),
-                           font, font_scale, peg_color, thickness)
+                          (panel_margin + panel_padding + header_width, y_pos), 
+                          main_font, value_font_scale, 
+                          peg_color, thickness)
+            y_pos += line_height
             
-            # Pole (label in black, value in corresponding color)
-            cv2.putText(frame, "Pole: ", (10, y_offset * 4),
-                       font, font_scale, black, thickness)
+            # Pole
+            cv2.putText(frame, "Pole:", 
+                      (panel_margin + panel_padding, y_pos), 
+                      main_font, header_font_scale, 
+                      text_colors['header'], thin_thickness)
             if ann['pole']:
-                pole_color = color_map.get(ann['pole'], black)
-                cv2.putText(frame, ann['pole'],
-                           (10 + int(font_scale * 70), y_offset * 4),
-                           font, font_scale, pole_color, thickness)
+                # Extract base color and type
+                base_color, pole_type = self.get_pole_base_color(ann['pole'])
+                pole_color = color_map.get(base_color, text_colors['value'])
+                
+                # Show pole base color
+                cv2.putText(frame, base_color, 
+                          (panel_margin + panel_padding + header_width, y_pos), 
+                          main_font, value_font_scale, 
+                          pole_color, thickness)
+                
+                # Show pole type text if applicable
+                if pole_type:
+                    type_text = self.get_pole_type_symbol(pole_type)
+                    symbol_pos = panel_margin + panel_padding + header_width + len(base_color) * 15
+                    cv2.putText(frame, type_text, 
+                              (symbol_pos, y_pos), 
+                              main_font, value_font_scale, 
+                              pole_color, thickness)
+            y_pos += line_height
             
-            # Error (black)
-            cv2.putText(frame, f"Error: {ann['error']}", (10, y_offset * 5),
-                       font, font_scale, black, thickness)
+            # MP
+            cv2.putText(frame, "MP:", 
+                      (panel_margin + panel_padding, y_pos), 
+                      main_font, header_font_scale, 
+                      text_colors['header'], thin_thickness)
+            cv2.putText(frame, ann['mp'], 
+                      (panel_margin + panel_padding + header_width, y_pos), 
+                      main_font, value_font_scale, 
+                      text_colors['value'], thickness)
+            y_pos += line_height
             
-            # MP (black)
-            cv2.putText(frame, f"MP: {ann['mp']}", (10, y_offset * 6),
-                       font, font_scale, black, thickness)
+            # Error Type - display as list
+            if 'error_type' in ann and ann['error_type'] != 'NO_ERROR':
+                error_types = ann['error_type'].split(';')
+                
+                # Error header
+                cv2.putText(frame, "Error Types:", 
+                          (panel_margin + panel_padding, y_pos), 
+                          main_font, header_font_scale, 
+                          text_colors['error'], thin_thickness)
+                y_pos += line_height
+                
+                # List each error on a separate line
+                for error in error_types:
+                    cv2.putText(frame, f"• {error}", 
+                              (panel_margin + panel_padding + 20, y_pos), 
+                              main_font, value_font_scale, 
+                              text_colors['error'], thickness)
+                    y_pos += line_height
+            
+            # Failure
+            if 'failure' in ann and ann['failure']:
+                cv2.putText(frame, "Failure:", 
+                          (panel_margin + panel_padding, y_pos), 
+                          main_font, header_font_scale, 
+                          text_colors['failure'], thin_thickness)
+                cv2.putText(frame, ann['failure'], 
+                          (panel_margin + panel_padding + header_width, y_pos), 
+                          main_font, value_font_scale, 
+                          text_colors['failure'], thickness)
             
             out.write(frame)
             frame_idx += 1
@@ -223,28 +439,160 @@ class AnnotationProcessor:
         cap.release()
         out.release()
         print("Video creation completed successfully")
+    
+    def generate_segment_annotations(self) -> List[Dict]:
+        """Generate segment-based annotations instead of frame-by-frame"""
+        print("Generating segment-based annotations for MP track...")
+        
+        # First get the raw annotations
+        segment_annotations = []
+        
+        # Process MP annotations
+        mp_annotations = [ann for ann in self.annotations if ann['type'] == 'MP']
+        
+        for ann in mp_annotations:
+            metadata = ann['metadata']
+            
+            # Get string values for each attribute
+            verb = self.attribute_mappings['4']['options'].get(metadata.get('4', '4'), 'Idle')
+            instrument = self.attribute_mappings['3']['options'].get(metadata.get('3', ''), '')
+            peg = self.attribute_mappings['1']['options'].get(metadata.get('1', ''), '')
+            pole = self.attribute_mappings['2']['options'].get(metadata.get('2', ''), '')
+            error_ids = metadata.get('5', '')
+            error_types = self.parse_error_types(error_ids)
+            failure = self.attribute_mappings['7']['options'].get(metadata.get('7', ''), '')
+            
+            mp = self.format_mp_field(verb, instrument, peg, pole)
+            
+            # Convert time to frame numbers
+            start_frame = int(ann['start_time'] * self.fps)
+            end_frame = int(ann['end_time'] * self.fps)
+            
+            segment_annotations.append({
+                'start_frame': start_frame,
+                'end_frame': end_frame,
+                'verb': verb,
+                'instrument': instrument,
+                'peg': peg,
+                'pole': pole,
+                'error_type': ';'.join(error_types),
+                'failure': failure,
+                'mp': mp
+            })
+        
+        print(f"Generated {len(segment_annotations)} MP segment annotations")
+        return segment_annotations
+    
+    def generate_error_segments(self) -> List[Dict]:
+        """Generate segment-based annotations for Error track"""
+        print("Generating segment-based annotations for Error track...")
+        
+        # Get error annotations
+        error_segments = []
+        
+        # Process Error annotations
+        error_annotations = [ann for ann in self.annotations if ann['type'] == 'Error']
+        
+        for ann in error_annotations:
+            metadata = ann['metadata']
+            
+            # Get error types and failure
+            error_ids = metadata.get('5', '')
+            error_types = self.parse_error_types(error_ids)
+            failure = self.attribute_mappings['7']['options'].get(metadata.get('7', ''), '')
+            
+            # Skip if no error
+            if error_types == ["NO_ERROR"] and not failure:
+                continue
+                
+            # Convert time to frame numbers
+            start_frame = int(ann['start_time'] * self.fps)
+            end_frame = int(ann['end_time'] * self.fps)
+            
+            error_segments.append({
+                'start_frame': start_frame,
+                'end_frame': end_frame,
+                'error_type': ';'.join(error_types),
+                'failure': failure,
+                'duration_frames': end_frame - start_frame,
+                'duration_seconds': ann['end_time'] - ann['start_time']
+            })
+        
+        print(f"Generated {len(error_segments)} Error segment annotations")
+        return error_segments
+    
+    def save_segment_csv(self, segment_annotations: List[Dict], output_path: str, fieldnames: List[str]):
+        """Save segment-based annotations to CSV"""
+        print(f"Saving segment annotations to CSV: {output_path}")
+        with open(output_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(segment_annotations)
+        print("Segment CSV file saved successfully")
 
 def main():
     parser = argparse.ArgumentParser(description='Process video annotations')
     parser.add_argument('csv_path', help='Path to the annotation CSV file')
     parser.add_argument('video_path', help='Path to the video file')
-    parser.add_argument('output_csv', help='Path to save the output CSV file')
-    parser.add_argument('output_video', help='Path to save the annotated video')
+    parser.add_argument('output_dir', help='Directory to save output files')
+    parser.add_argument('--mp_output', help='Filename for MP annotations CSV (default: mp_annotations.csv)', default='mp_annotations.csv')
+    parser.add_argument('--error_output', help='Filename for Error annotations CSV (default: error_annotations.csv)', default='error_annotations.csv')
+    parser.add_argument('--segment_output', help='Filename for segment-based annotations CSV (default: segment_annotations.csv)', default='segment_annotations.csv')
+    parser.add_argument('--error_segment_output', help='Filename for error segment annotations CSV (default: error_segments.csv)', default='error_segments.csv')
+    parser.add_argument('--video_output', help='Filename for annotated video (default: annotated_video.mp4)', default='annotated_video.mp4')
+    parser.add_argument('--generate_video', help='Generate annotated video (default: False)', action='store_true', default=False)
     
     args = parser.parse_args()
+    
+    # Create output directory if it doesn't exist
+    os.makedirs(args.output_dir, exist_ok=True)
+    
+    # Define output paths
+    mp_csv_path = os.path.join(args.output_dir, args.mp_output)
+    error_csv_path = os.path.join(args.output_dir, args.error_output)
+    segment_csv_path = os.path.join(args.output_dir, args.segment_output)
+    error_segment_path = os.path.join(args.output_dir, args.error_segment_output)
+    video_path = os.path.join(args.output_dir, args.video_output)
     
     print(f"\nStarting annotation processing...")
     print(f"Input CSV: {args.csv_path}")
     print(f"Input Video: {args.video_path}")
-    print(f"Output CSV: {args.output_csv}")
-    print(f"Output Video: {args.output_video}\n")
+    print(f"Output Directory: {args.output_dir}")
+    print(f"MP Annotations CSV: {mp_csv_path}")
+    print(f"Error Annotations CSV: {error_csv_path}")
+    print(f"MP Segment Annotations CSV: {segment_csv_path}")
+    print(f"Error Segment Annotations CSV: {error_segment_path}")
+    if args.generate_video:
+        print(f"Output Video: {video_path}")
+    else:
+        print("Video generation is disabled")
+    print()
     
     processor = AnnotationProcessor(args.csv_path, args.video_path)
     processor.parse_csv()
     processor.fill_gaps()
-    frame_annotations = processor.generate_frame_annotations()
-    processor.save_csv(frame_annotations, args.output_csv)
-    processor.create_annotated_video(frame_annotations, args.output_video)
+    
+    # Generate and save frame-by-frame annotations
+    mp_annotations, error_annotations = processor.generate_frame_annotations()
+    mp_fieldnames = ['frame_id', 'verb', 'instrument', 'peg', 'pole', 'error_type', 'failure', 'mp']
+    processor.save_csv(mp_annotations, mp_csv_path, mp_fieldnames)
+    error_fieldnames = ['frame_id', 'error_type', 'failure', 'source']
+    processor.save_csv(error_annotations, error_csv_path, error_fieldnames)
+    
+    # Generate and save MP segment-based annotations
+    segment_annotations = processor.generate_segment_annotations()
+    mp_segment_fieldnames = ['start_frame', 'end_frame', 'verb', 'instrument', 'peg', 'pole', 'error_type', 'failure', 'mp']
+    processor.save_segment_csv(segment_annotations, segment_csv_path, mp_segment_fieldnames)
+    
+    # Generate and save Error segment-based annotations
+    error_segments = processor.generate_error_segments()
+    error_segment_fieldnames = ['start_frame', 'end_frame', 'error_type', 'failure', 'duration_frames', 'duration_seconds']
+    processor.save_segment_csv(error_segments, error_segment_path, error_segment_fieldnames)
+    
+    # Create annotated video if enabled
+    if args.generate_video:
+        print("Generating annotated video...")
+        processor.create_annotated_video(mp_annotations, video_path)
     
     print("\nProcessing completed successfully!")
 
