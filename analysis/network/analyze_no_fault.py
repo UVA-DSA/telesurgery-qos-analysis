@@ -1,4 +1,5 @@
 import os
+import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +10,29 @@ import lz4.frame
 # Define the packet structure
 fields = 'sequence pactyp version delx0 delx1 dely0 dely1 delz0 delz1 Qx0 Qx1 Qy0 Qy1 Qz0 Qz1 Qw0 Qw1 buttonstate0 buttonstate1 grasp0 grasp1 surgeon_mode checksum'.split()
 format_str = '<IIIiiiiiiddddddddiiiiii'
+
+def get_psm_vars(command, index):
+    
+    deltaX = command[f'delx{index}']
+    deltaY = command[f'dely{index}']
+    deltaZ = command[f'delz{index}']
+
+    deltaQx = command[f'Qx{index}']
+    deltaQy = command[f'Qy{index}']
+    deltaQz = command[f'Qz{index}']
+
+    grasp = command[f'grasp{index}']
+
+    
+    return ((deltaX, deltaY, deltaZ), (deltaQx, deltaQy, deltaQz), grasp)
+
+def get_time_sequence_pedal_value(command):
+
+    sequence = command[f'sequence']
+    surgeon_mode = command[f'surgeon_mode'] 
+    timestamp = command[f'timestamp']
+
+    return timestamp, sequence, surgeon_mode
 
 def extract_packets_from_bin(bin_file, output_csv=None):
     """
@@ -22,7 +46,7 @@ def extract_packets_from_bin(bin_file, output_csv=None):
         DataFrame containing extracted packet data
     """
     if output_csv is None:
-        output_csv = os.path.join(os.path.dirname(bin_file), 'extracted_packet_data.csv')
+        output_csv = os.path.join(os.path.dirname(bin_file), 'console_data_completed_1.csv')
         
     # Check file size
     size = os.path.getsize(bin_file)
@@ -61,7 +85,16 @@ def extract_packets_from_bin(bin_file, output_csv=None):
         df = pd.DataFrame(packet_data_list)
         
         # Save to CSV
-        df.to_csv(output_csv, index=False)
+        with open(output_csv, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["time_stamp", "sequence_number", "pos0_x", "pos0_y", "pos0_z", "rot0_x", "rot0_y", "rot0_z", 
+                             "pos1_x", "pos1_y", "pos1_z", "rot1_x", "rot1_y", "rot1_z", "grasper0", "grasper1", "pedal"])
+            for p in packet_data_list:
+                pos0, rot0, grasp0 = get_psm_vars(p, 0)
+                pos1, rot1, grasp1 = get_psm_vars(p, 1)
+                ts, seq_num, pedal = get_time_sequence_pedal_value(p)
+                writer.writerow([ts, seq_num, *pos0, *rot0, *pos1, *rot1, grasp0, grasp1, pedal])
+        
         print(f"Data saved to {output_csv}")
         
         return df
@@ -136,7 +169,7 @@ def analyze_no_fault(scenario_dir, output_dir=None):
     
     # Define file paths
     emulator_bin = os.path.join(scenario_dir, 'console_data_complete_1.bin')
-    extracted_csv = os.path.join(scenario_dir, 'extracted_packet_data.csv')
+    extracted_csv = os.path.join(scenario_dir, 'console_data_completed_1.csv')
     received_csv = os.path.join(scenario_dir, 'console_data_recieved_1.csv')
     
     # Check if binary file exists

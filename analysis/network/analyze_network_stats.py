@@ -4,6 +4,7 @@ import pandas as pd
 import struct
 import lz4.frame
 import os
+import csv
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from collections import namedtuple
@@ -12,6 +13,30 @@ from collections import namedtuple
 fields = 'sequence pactyp version delx0 delx1 dely0 dely1 delz0 delz1 Qx0 Qx1 Qy0 Qy1 Qz0 Qz1 Qw0 Qw1 buttonstate0 buttonstate1 grasp0 grasp1 surgeon_mode checksum'.split()
 UStruct = namedtuple('UStruct', fields)
 format_str = '<IIIiiiiiiddddddddiiiiii'
+
+def get_psm_vars(command, index):
+    
+    deltaX = command[f'delx{index}']
+    deltaY = command[f'dely{index}']
+    deltaZ = command[f'delz{index}']
+
+    deltaQx = command[f'Qx{index}']
+    deltaQy = command[f'Qy{index}']
+    deltaQz = command[f'Qz{index}']
+
+    grasp = command[f'grasp{index}']
+
+    
+    return ((deltaX, deltaY, deltaZ), (deltaQx, deltaQy, deltaQz), grasp)
+
+def get_time_sequence_pedal_value(command):
+
+    sequence = command[f'sequence']
+    surgeon_mode = command[f'surgeon_mode'] 
+    timestamp = command[f'timestamp']
+
+    return timestamp, sequence, surgeon_mode
+
 
 def read_packet_log(log_file: str, is_delay: bool = False) -> Tuple[List[int], List[bool], List[Dict]]:
     """
@@ -493,6 +518,29 @@ def save_results_to_excel(results: Dict, output_dir: str, condition: str, scenar
             
             errors_df.to_excel(writer, sheet_name='Delay Errors', index=False)
 
+def save_packet_data_to_csv2(packet_data_list: List[Dict], output_file: str):
+    """
+    Save packet data to a CSV file.
+    
+    Args:
+        packet_data_list: List of dictionaries containing packet data
+        output_file: Path to save the CSV file
+    """
+    if not packet_data_list:
+        return
+    
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["time_stamp", "sequence_number", "pos0_x", "pos0_y", "pos0_z", "rot0_x", "rot0_y", "rot0_z", 
+                         "pos1_x", "pos1_y", "pos1_z", "rot1_x", "rot1_y", "rot1_z", "grasper0", "grasper1", "pedal"])
+        for p in packet_data_list:
+            pos0, rot0, grasp0 = get_psm_vars(p, 0)
+            pos1, rot1, grasp1 = get_psm_vars(p, 1)
+            ts, seq_num, pedal = get_time_sequence_pedal_value(p)
+            writer.writerow([ts, seq_num, *pos0, *rot0, *pos1, *rot1, grasp0, grasp1, pedal])
+
+    print(f"\nPacket data saved to {output_file}")
+
 def save_packet_data_to_csv(packet_data_list: List[Dict], output_file: str):
     """
     Save packet data to a CSV file.
@@ -550,8 +598,8 @@ def analyze_experiment_data(experiment_dir: str, output_dir: str):
             )
             
             # Save extracted packet data to CSV in the scenario folder
-            csv_output = os.path.join(scenario_dir, 'extracted_packet_data.csv')
-            save_packet_data_to_csv(packet_data, csv_output)
+            csv_output = os.path.join(scenario_dir, 'console_data_completed_1.csv')
+            save_packet_data_to_csv2(packet_data, csv_output)
             
             if condition in ['packet_loss', 'communication_loss']:
                 # Analyze packet loss
@@ -590,11 +638,12 @@ def analyze_experiment_data(experiment_dir: str, output_dir: str):
     os.system(f"python {analyze_no_fault_path} --scenario_dir {experiment_dir} --output_dir {output_dir}")
 
 if __name__ == "__main__":
-    import argparse
+    # import argparse
     
-    parser = argparse.ArgumentParser(description='Analyze network statistics from experiment data.')
-    parser.add_argument('--experiment_dir', required=True, help='Path to the experiment directory')
-    parser.add_argument('--output_dir', required=True, help='Path to save analysis results')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description='Analyze network statistics from experiment data.')
+    # parser.add_argument('--experiment_dir', required=True, help='Path to the experiment directory')
+    # parser.add_argument('--output_dir', required=True, help='Path to save analysis results')
+    # args = parser.parse_args()
     
-    analyze_experiment_data(args.experiment_dir, args.output_dir)
+    # analyze_experiment_data(args.experiment_dir, args.output_dir)
+    analyze_experiment_data("exp_data_1", "exp_data_1_out")
