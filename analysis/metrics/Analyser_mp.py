@@ -77,6 +77,7 @@ class AnalyserMP:
                 else:
                     motion_len += np.sqrt(completed[j][8]**2 + completed[j][9]**2 + completed[j][10]**2) * self.sf_pos * scale[1]
             motion_length.append(motion_len)
+
         return motion_length
 
     def get_MP_index_interval_completed(self, peg_mp_dict, completed, color):
@@ -126,7 +127,7 @@ class AnalyserMP:
         if len(robot) == len(transformed):
             print("robot and transformed data has same length!")
 
-        return robot, transformed,completed
+        return robot, transformed, completed
     
     def align_console_kinematic_data(self, robot, transformed, completed):
         new_completed = np.zeros((len(transformed), completed.shape[1]))
@@ -158,17 +159,22 @@ class AnalyserMP:
         
         return [scale_pos, scale_rot], [offset_pos, offset_rot], [RMSE_pos, RMSE_rot]
 
-    def plot_trjactory_pos(self, mp_intervals, robot, transformed, completed, scale, offset):
+    def plot_trjactory_pos(self, mp_intervals, robot, transformed, completed, scale, offset, arm):
         t = np.linspace(0, int(robot[-1, 0] - robot[0, 0]), len(robot))
         mp_intervals = mp_intervals - mp_intervals[0][0]
         colors = ['skyblue', 'lightgreen', 'yellow', 'orchid', '#FFD580']
 
         fig, axs = plt.subplots(4, 1, sharex=True, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 3, 3, 1]})
 
+        if arm == 'left':
+            j = 2
+        else: 
+            j = 8
+
         for i, pos_label in enumerate(['X', 'Y', 'Z']):
-            ri = robot[:, i+2]
-            ti = transformed[:, i+2] * scale[0] + offset[0][i]
-            ci = completed[:, i+2] * scale[0] + offset[0][i]
+            ri = robot[:, i+j]
+            ti = transformed[:, i+j] * scale[0] + offset[0][i]
+            ci = completed[:, i+j] * scale[0] + offset[0][i]
         
             ax = axs[i]
      
@@ -206,17 +212,23 @@ class AnalyserMP:
         plt.tight_layout()
         plt.show()
     
-    def plot_trjactory_rot(self, mp_intervals, robot, transformed, completed, scale, offset):
+    def plot_trjactory_rot(self, mp_intervals, robot, transformed, completed, scale, offset, arm):
         t = np.linspace(0, int(robot[-1, 0] - robot[0, 0]), len(robot))
         mp_intervals = mp_intervals - mp_intervals[0][0]
         colors = ['skyblue', 'lightgreen', 'yellow', 'orchid', '#FFD580']
 
         fig, axs = plt.subplots(4, 1, sharex=True, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 3, 3, 1]})
 
+        if arm == 'left':
+            j = 5
+        else: 
+            j = 11
+
+
         for i, rot_label in enumerate(['X', 'Y', 'Z']):
-            ri = robot[:, i+5]
-            ti = transformed[:, i+5] * scale[1] + offset[1][i]
-            ci = completed[:, i+5] * scale[1] + offset[1][i]
+            ri = robot[:, i+j]
+            ti = transformed[:, i+j] * scale[1] + offset[1][i]
+            ci = completed[:, i+j] * scale[1] + offset[1][i]
             
             ax = axs[i]
 
@@ -250,23 +262,21 @@ class AnalyserMP:
         plt.show()
 
 if __name__ == "__main__":
-    # Tcompletion = np.zeros((6, 5))
-    # LMotion = np.zeros((6, 5))
-    # peg_traj = np.zeros((6, 670, 3))
     path = "exp_data_1/no_fault/freefault1"
     color = ['Red', 'Green', 'Blue', 'Magenta', 'Yellow', 'Cyan']
     analyser_mp = AnalyserMP(path)
     mp_dict = analyser_mp.get_MP_timestamp_intervals()
     print("done")
     for i in range(len(mp_dict)):
+        print(color[i])
         robot, transformed_delta, completed_delta = analyser_mp.get_one_peg_kinematic_data(mp_dict, color[i])
         mp_intervals_robot = analyser_mp.get_MP_index_interval_robot(mp_dict, color[i])
         robot, transformed, completed = analyser_mp.align_console_kinematic_data(robot, transformed_delta, completed_delta)
-        if i < 3:
-            robot_xyz = robot[:, 2:5]
-        else:
-            robot_xyz = robot[:, 8:11]
         scale, offset, rmse = analyser_mp.get_offset_coefficients(robot, transformed, 'left')
         mp_intervals_completed = analyser_mp.get_MP_index_interval_completed(mp_dict, completed_delta, color[i])
-        analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset)
-        analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset)
+        if i < 3:
+            analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset, "left")
+            analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset, "left")
+        else:
+            analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset, "right")
+            analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset, "right")
