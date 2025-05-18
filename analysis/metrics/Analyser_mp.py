@@ -272,11 +272,12 @@ if __name__ == "__main__":
         robot, transformed_delta, completed_delta = analyser_mp.get_one_peg_kinematic_data(mp_dict, color[i])
         mp_intervals_robot = analyser_mp.get_MP_index_interval_robot(mp_dict, color[i])
         robot, transformed, completed = analyser_mp.align_console_kinematic_data(robot, transformed_delta, completed_delta)
-        scale, offset, rmse = analyser_mp.get_offset_coefficients(robot, transformed, 'left')
         mp_intervals_completed = analyser_mp.get_MP_index_interval_completed(mp_dict, completed_delta, color[i])
         if i < 3:
-            analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset, "left")
-            analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset, "left")
+            scale, offset, rmse = analyser_mp.get_offset_coefficients(robot, transformed, 'right')
+            analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset, 'right')
+            analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset, 'right')
         else:
-            analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset, "right")
-            analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset, "right")
+            scale, offset, rmse = analyser_mp.get_offset_coefficients(robot, transformed, 'left')
+            analyser_mp.plot_trjactory_pos(mp_intervals_robot, robot, transformed, completed, scale, offset, 'left')
+            analyser_mp.plot_trjactory_rot(mp_intervals_robot, robot, transformed, completed, scale, offset, 'left')
