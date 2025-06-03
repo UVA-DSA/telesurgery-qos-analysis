@@ -89,11 +89,6 @@ class AnnotationProcessor:
                 if mp_annotations[i]['end_time'] < mp_annotations[i + 1]['start_time']:
                     gap_count += 1
                     mp_annotations[i]['end_time'] = mp_annotations[i + 1]['start_time']
-                    
-            # Extend last annotation to end of video
-            if mp_annotations[-1]['end_time'] < self.video_duration:
-                print(f"Extending last MP annotation from {mp_annotations[-1]['end_time']} to {self.video_duration}")
-                mp_annotations[-1]['end_time'] = self.video_duration
             
             print(f"Filled {gap_count} gaps between MP annotations")
         
