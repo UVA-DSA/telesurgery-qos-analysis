@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import matplotlib.patches as mpatches
 from utilities import *
 
 class AnalyserMP:
@@ -105,16 +106,16 @@ class AnalyserMP:
     
         return interval
 
-    def get_MP_index_interval_robot(self, peg_mp_dict, color):
+    def get_MP_index_interval_robot(self, peg_mp_dict, robot, color):
         interval = []
         
         for i in range(len(peg_mp_dict[color])):
             if i == 0:
-                idx_Ts_robot = np.argmin(np.abs(self.robot_data[:, 0] - peg_mp_dict[color][i][-2]))
-                idx_Te_robot = np.argmin(np.abs(self.robot_data[:, 0] - peg_mp_dict[color][i][-1]))
+                idx_Ts_robot = np.argmin(np.abs(robot[:, 0] - peg_mp_dict[color][i][-2]))
+                idx_Te_robot = np.argmin(np.abs(robot[:, 0] - peg_mp_dict[color][i][-1]))
             else:
                 idx_Ts_robot = idx_Te_robot
-                idx_Te_robot = np.argmin(np.abs(self.robot_data[:, 0] - peg_mp_dict[color][i][-1]))
+                idx_Te_robot = np.argmin(np.abs(robot[:, 0] - peg_mp_dict[color][i][-1]))
             interval.append([idx_Ts_robot, idx_Te_robot])
     
         return interval
@@ -184,12 +185,26 @@ class AnalyserMP:
         #transformed[:, 2:14] = np.cumsum(transformed[:, 2:14], axis=0)
         #robot[:, 2:14] = robot[:, 2:14]
         
-        if len(robot) == len(transformed) == len(new_completed):
-            print("robot, transformed, new_completed data has same length!")
+        # if len(robot) == len(transformed) == len(new_completed):
+        #     print("robot, transformed, new_completed data has same length!")
 
         return robot, transformed, new_completed
 
-
+    def get_loss_intervals(self, drop_list):
+        intervals = []
+        start = None
+        for i, val in enumerate(drop_list):
+            if val == 1 and start is None:
+                start = i
+            elif val == 0 and start is not None:
+                intervals.append((start, i))
+                start = None
+        
+        if start is not None:
+            intervals.append((start, len(drop_list)))
+        
+        return intervals
+        
     def get_one_peg_kinematic_data(self, peg_mp_dict, color):
         Ts = peg_mp_dict[color][0][1]
         Te = peg_mp_dict[color][-1][2]
