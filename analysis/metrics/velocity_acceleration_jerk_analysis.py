@@ -11,6 +11,7 @@ warnings.filterwarnings('ignore')
 # Add the metrics directory to path to import AnalyserMP
 sys.path.append(os.path.join(os.path.dirname(__file__), 'metrics'))
 from Analyser_mp import AnalyserMP
+from constants import *
 
 class VelocityJerkAnalyzer:
     def __init__(self, exp_data_path):
@@ -146,7 +147,7 @@ class VelocityJerkAnalyzer:
         # Compute metrics for console space (apply 0.15 scaling factor)
         # Scale console data by 0.15 since commands are scaled down before being applied to robot
         console_data_scaled = console_data.copy()
-        console_data_scaled[:, console_pos_cols] *= 0.15
+        console_data_scaled[:, console_pos_cols] *= CONSOLE_SIM_SCALE
         
         console_velocity = self.compute_position_velocities(console_data_scaled, 0, console_pos_cols)
         console_acceleration = np.array([])

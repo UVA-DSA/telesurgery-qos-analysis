@@ -11,9 +11,9 @@ def calculate_motion_length(completed, interval_min, interval_max, scale, arm):
 
     for i in range(interval_min, interval_max):
         if arm == 'left':
-            motion_len += np.sqrt(completed[i][2]**2 + completed[i][3]**2 + completed[i][4]**2) * 0.000115 * scale
+            motion_len += np.sqrt(completed[i][2]**2 + completed[i][3]**2 + completed[i][4]**2) * SIM_POS_SCALE * scale
         else:
-            motion_len += np.sqrt(completed[i][8]**2 + completed[i][9]**2 + completed[i][10]**2) * 0.000115 * scale
+            motion_len += np.sqrt(completed[i][8]**2 + completed[i][9]**2 + completed[i][10]**2) * SIM_POS_SCALE * scale
     
     return motion_len
 
@@ -134,7 +134,6 @@ def get_mp_motion_length_robot(mp_dict, analyser_mp):
 if __name__ == "__main__":
     root_address = "exp_data_new"
     netfolders = ['no_fault', 'packet_loss', 'delay', 'communication_loss']
-    pos_scale = 0.15
 
     net_conditions = ['normal']
 
@@ -154,8 +153,8 @@ if __name__ == "__main__":
             sub_path = os.path.join(path, sub_folder)
             analyser_mp = AnalyserMP(sub_path)
             mp_dict = analyser_mp.get_MP_timestamp_error()
-            motion_length_console = get_peg_transfer_motion_length_console(mp_dict, analyser_mp, pos_scale)
-            motion_length_mp_console = get_mp_motion_length_console(mp_dict, analyser_mp, pos_scale)
+            motion_length_console = get_peg_transfer_motion_length_console(mp_dict, analyser_mp, CONSOLE_SIM_SCALE)
+            motion_length_mp_console = get_mp_motion_length_console(mp_dict, analyser_mp, CONSOLE_SIM_SCALE)
             motion_length_robot = get_peg_transfer_motion_length_robot(mp_dict, analyser_mp)
             motion_length_mp_robot = get_mp_motion_length_robot(mp_dict, analyser_mp)
             

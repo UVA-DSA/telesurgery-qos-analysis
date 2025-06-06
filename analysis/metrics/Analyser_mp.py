@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import matplotlib.patches as mpatches
 from utilities import *
+from constants import *
 
 class AnalyserMP:
     def __init__(self, data_path):
@@ -28,8 +29,8 @@ class AnalyserMP:
         self.completed_data[:, 0] *= 10**-9  # Change the timestamp unit 
         self.Tframe = 1 / 60   # Frame rate 60 Hz
         self.Tinitial = self.robot_data[0][0] # Initial frame timestamp
-        self.sf_pos = 0.000115      # System scale factor of postion
-        self.sf_rot = 0.12 * 0.3    # System scale factor of rotation
+        self.sf_pos = SIM_POS_SCALE      # System scale factor of postion
+        self.sf_rot = SIM_ROT_SCALE    # System scale factor of rotation
         self.Tpos = np.array([[0, -1,  0],
                               [-1, 0,  0],
                               [0,  0, -1]])  # Position transformation matrix
