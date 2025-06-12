@@ -179,23 +179,42 @@ class SurveyVisualizer:
         # Color palette for scenarios
         colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A']
         
-        # Get scenario labels from the first participant (should be consistent across participants)
-        scenarios = self.parse_tlx_scenarios(participant_ids[0]) if participant_ids else [f"Scenario {i+1}" for i in range(4)]
+        # Get all unique scenarios across all participants
+        all_scenarios = set()
+        participant_scenario_maps = {}
         
-        # Calculate average values for each scenario
-        for scenario_idx in range(4):
+        for _, row in filtered_df.iterrows():
+            participant_id = row['Participant ID']
+            participant_scenarios = self.parse_tlx_scenarios(participant_id)
+            participant_scenario_maps[participant_id] = participant_scenarios
+            all_scenarios.update(participant_scenarios)
+        
+        scenarios = list(all_scenarios)
+        print(f"All scenarios found: {scenarios}")
+        print(f"Participant scenario mappings: {participant_scenario_maps}")
+        
+        # Calculate average values for each unique scenario across all participants
+        for scenario_idx, scenario_name in enumerate(scenarios):
             avg_values = []
+            print(f"\nProcessing scenario: {scenario_name}")
             
+            # For each question in this scenario
             for question_idx in range(1, num_vars + 1):
-                col_name = f'T{scenario_idx + 1}Q{question_idx}'
+                question_name = question_types[question_idx - 1] if question_idx <= len(question_types) else f"Q{question_idx}"
+                question_values = []
                 
-                if col_name in filtered_df.columns:
-                    # Collect all valid values for this question across participants
-                    question_values = []
+                # For each participant, find which T number corresponds to this scenario
+                for _, row in filtered_df.iterrows():
+                    participant_id = row['Participant ID']
+                    participant_scenarios = participant_scenario_maps.get(participant_id, [])
                     
-                    for _, row in filtered_df.iterrows():
-                        value = row[col_name]
-                        if pd.notna(value):
+                    # Find which T number (1-4) corresponds to this scenario for this participant
+                    try:
+                        t_number = participant_scenarios.index(scenario_name) + 1  # +1 because T1, T2, T3, T4
+                        col_name = f'T{t_number}Q{question_idx}'
+                        
+                        if col_name in row and pd.notna(row[col_name]):
+                            value = row[col_name]
                             try:
                                 if isinstance(value, str) and value.isdigit():
                                     value = float(value)
@@ -204,24 +223,28 @@ class SurveyVisualizer:
                                 else:
                                     continue  # Skip invalid values
                                 question_values.append(value)
+                                print(f"  {participant_id} - {question_name}: {value} (from {col_name})")
                             except:
                                 continue  # Skip invalid values
-                    
-                    # Calculate average, or use default if no valid values
-                    if question_values:
-                        avg_value = np.mean(question_values)
-                    else:
-                        avg_value = 5  # Default value
+                    except ValueError:
+                        # This participant doesn't have this scenario
+                        print(f"  {participant_id} - {question_name}: scenario not found")
+                        continue
+                
+                # Calculate average across all participants for this question in this scenario
+                if question_values:
+                    avg_value = np.mean(question_values)
+                    print(f"  → Average for {question_name}: {avg_value:.2f} (from {len(question_values)} responses)")
                 else:
                     avg_value = 5  # Default value
+                    print(f"  → No valid responses for {question_name}, using default: {avg_value}")
                 
                 avg_values.append(avg_value)
             
             avg_values += avg_values[:1]  # Complete the circle
             
             # Plot the scenario
-            scenario_label = scenarios[scenario_idx] if scenario_idx < len(scenarios) else f"Scenario {scenario_idx + 1}"
-            ax.plot(angles, avg_values, 'o-', linewidth=3, label=scenario_label, 
+            ax.plot(angles, avg_values, 'o-', linewidth=3, label=scenario_name, 
                    color=colors[scenario_idx % len(colors)], alpha=0.8, markersize=8)
             ax.fill(angles, avg_values, alpha=0.25, color=colors[scenario_idx % len(colors)])
         
