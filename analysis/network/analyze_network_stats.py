@@ -34,8 +34,9 @@ def get_time_sequence_pedal_value(command):
     sequence = command[f'sequence']
     surgeon_mode = command[f'surgeon_mode'] 
     timestamp = command[f'timestamp']
+    dropped = int(command[f'dropped'])
 
-    return timestamp, sequence, surgeon_mode
+    return timestamp, sequence, surgeon_mode, dropped
 
 
 def read_packet_log(log_file: str, is_delay: bool = False) -> Tuple[List[int], List[bool], List[Dict]]:
@@ -532,12 +533,12 @@ def save_packet_data_to_csv2(packet_data_list: List[Dict], output_file: str):
     with open(output_file, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["time_stamp", "sequence_number", "pos0_x", "pos0_y", "pos0_z", "rot0_x", "rot0_y", "rot0_z", 
-                         "pos1_x", "pos1_y", "pos1_z", "rot1_x", "rot1_y", "rot1_z", "grasper0", "grasper1", "pedal"])
+                         "pos1_x", "pos1_y", "pos1_z", "rot1_x", "rot1_y", "rot1_z", "grasper0", "grasper1", "pedal", "drop"])
         for p in packet_data_list:
             pos0, rot0, grasp0 = get_psm_vars(p, 0)
             pos1, rot1, grasp1 = get_psm_vars(p, 1)
-            ts, seq_num, pedal = get_time_sequence_pedal_value(p)
-            writer.writerow([ts, seq_num, *pos0, *rot0, *pos1, *rot1, grasp0, grasp1, pedal])
+            ts, seq_num, pedal, drop = get_time_sequence_pedal_value(p)
+            writer.writerow([ts, seq_num, *pos0, *rot0, *pos1, *rot1, grasp0, grasp1, pedal, drop])
 
     print(f"\nPacket data saved to {output_file}")
 
@@ -646,4 +647,4 @@ if __name__ == "__main__":
     # args = parser.parse_args()
     
     # analyze_experiment_data(args.experiment_dir, args.output_dir)
-    analyze_experiment_data("exp_data_1", "exp_data_1_out")
+    analyze_experiment_data("exp_data_new", "exp_data_new_out")

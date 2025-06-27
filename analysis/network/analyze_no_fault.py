@@ -31,8 +31,9 @@ def get_time_sequence_pedal_value(command):
     sequence = command[f'sequence']
     surgeon_mode = command[f'surgeon_mode'] 
     timestamp = command[f'timestamp']
+    dropped = int(command[f'dropped'])
 
-    return timestamp, sequence, surgeon_mode
+    return timestamp, sequence, surgeon_mode, dropped
 
 def extract_packets_from_bin(bin_file, output_csv=None):
     """
@@ -88,12 +89,12 @@ def extract_packets_from_bin(bin_file, output_csv=None):
         with open(output_csv, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(["time_stamp", "sequence_number", "pos0_x", "pos0_y", "pos0_z", "rot0_x", "rot0_y", "rot0_z", 
-                             "pos1_x", "pos1_y", "pos1_z", "rot1_x", "rot1_y", "rot1_z", "grasper0", "grasper1", "pedal"])
+                             "pos1_x", "pos1_y", "pos1_z", "rot1_x", "rot1_y", "rot1_z", "grasper0", "grasper1", "pedal", "drop"])
             for p in packet_data_list:
                 pos0, rot0, grasp0 = get_psm_vars(p, 0)
                 pos1, rot1, grasp1 = get_psm_vars(p, 1)
-                ts, seq_num, pedal = get_time_sequence_pedal_value(p)
-                writer.writerow([ts, seq_num, *pos0, *rot0, *pos1, *rot1, grasp0, grasp1, pedal])
+                ts, seq_num, pedal, drop = get_time_sequence_pedal_value(p)
+                writer.writerow([ts, seq_num, *pos0, *rot0, *pos1, *rot1, grasp0, grasp1, pedal, drop])
         
         print(f"Data saved to {output_csv}")
         
