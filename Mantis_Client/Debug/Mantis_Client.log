@@ -1,0 +1,35 @@
+﻿Build started 6/20/2018 6:18:53 PM.
+     1>Project "C:\BRL_Master-master\BRL_Master-master\SUI_win RII\Mantis_Client\Mantis_Client.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Touching "Debug\Mantis_Client.unsuccessfulbuild".
+       ClCompile:
+         All outputs are up-to-date.
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"Debug\Win32\Mantis_Client.exe" /NOLOGO /LIBPATH:C:\OpenHaptics\Academic\3.2\utilities\lib\Win32\Debug /LIBPATH:C:\OpenHaptics\Academic\3.2\lib\Win32\Debug C:\OpenHaptics\Academic\3.2\lib\Win32\DebugAcademicEdition\hd.lib hdu.lib WS2_32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\Mantis_Client.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"Debug\Win32\Omni_Client.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE:NO /IMPLIB:"Debug\Win32\Mantis_Client.lib" /MACHINE:X86 Debug\CommonDS.obj
+         Debug\PracticalSocket.obj
+         Debug\coordinateSystems.obj
+         Debug\mantis_client.obj
+         Debug\comm.obj
+         Debug\main.obj
+         Debug\stdafx.obj
+            Creating library Debug\Win32\Mantis_Client.lib and object Debug\Win32\Mantis_Client.exp
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: void __thiscall MantisDuoControllerClass::SetForce(unsigned int,float const * const)" (?SetForce@MantisDuoControllerClass@@QAEXIQBM@Z) referenced in function "void __cdecl HapticsFunction(void *)" (?HapticsFunction@@YAXPAX@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetZPosition(unsigned int)" (?GetZPosition@MantisDuoControllerClass@@QAEMI@Z) referenced in function "void __cdecl HapticsFunction(void *)" (?HapticsFunction@@YAXPAX@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetYPosition(unsigned int)" (?GetYPosition@MantisDuoControllerClass@@QAEMI@Z) referenced in function "void __cdecl HapticsFunction(void *)" (?HapticsFunction@@YAXPAX@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetXPosition(unsigned int)" (?GetXPosition@MantisDuoControllerClass@@QAEMI@Z) referenced in function "void __cdecl HapticsFunction(void *)" (?HapticsFunction@@YAXPAX@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetOpening(unsigned int)" (?GetOpening@MantisDuoControllerClass@@QAEMI@Z) referenced in function "void __cdecl HapticsFunction(void *)" (?HapticsFunction@@YAXPAX@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: bool __thiscall MantisDuoControllerClass::IsFootPedalPressed(unsigned int)" (?IsFootPedalPressed@MantisDuoControllerClass@@QAE_NI@Z) referenced in function "void __cdecl HapticsFunction(void *)" (?HapticsFunction@@YAXPAX@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetRoll(unsigned int)" (?GetRoll@MantisDuoControllerClass@@QAEMI@Z) referenced in function "double __cdecl filterRoll(int)" (?filterRoll@@YANH@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetPitch(unsigned int)" (?GetPitch@MantisDuoControllerClass@@QAEMI@Z) referenced in function "double __cdecl filterPitch(int)" (?filterPitch@@YANH@Z)
+     1>mantis_client.obj : error LNK2019: unresolved external symbol "public: float __thiscall MantisDuoControllerClass::GetYaw(unsigned int)" (?GetYaw@MantisDuoControllerClass@@QAEMI@Z) referenced in function "double __cdecl filterYaw(int)" (?filterYaw@@YANH@Z)
+     1>main.obj : error LNK2019: unresolved external symbol "public: __thiscall MantisDuoControllerClass::MantisDuoControllerClass(void)" (??0MantisDuoControllerClass@@QAE@XZ) referenced in function _main
+     1>main.obj : error LNK2019: unresolved external symbol "public: __thiscall MantisDuoControllerClass::~MantisDuoControllerClass(void)" (??1MantisDuoControllerClass@@QAE@XZ) referenced in function "public: void * __thiscall MantisDuoControllerClass::`scalar deleting destructor'(unsigned int)" (??_GMantisDuoControllerClass@@QAEPAXI@Z)
+     1>main.obj : error LNK2019: unresolved external symbol "public: bool __thiscall MantisDuoControllerClass::IsHapticsThreadOn(void)" (?IsHapticsThreadOn@MantisDuoControllerClass@@QAE_NXZ) referenced in function "bool __cdecl InitializeDevice(void)" (?InitializeDevice@@YA_NXZ)
+     1>main.obj : error LNK2019: unresolved external symbol "public: bool __thiscall MantisDuoControllerClass::InitializeDevice(void (__cdecl*)(void *),void *)" (?InitializeDevice@MantisDuoControllerClass@@QAE_NP6AXPAX@Z0@Z) referenced in function "bool __cdecl InitializeDevice(void)" (?InitializeDevice@@YA_NXZ)
+     1>main.obj : error LNK2019: unresolved external symbol "public: void __thiscall MantisDuoControllerClass::TerminateDevice(void)" (?TerminateDevice@MantisDuoControllerClass@@QAEXXZ) referenced in function "void __cdecl TerminateDevice(void)" (?TerminateDevice@@YAXXZ)
+     1>Debug\Win32\Mantis_Client.exe : fatal error LNK1120: 14 unresolved externals
+     1>Done Building Project "C:\BRL_Master-master\BRL_Master-master\SUI_win RII\Mantis_Client\Mantis_Client.vcxproj" (build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:00.12

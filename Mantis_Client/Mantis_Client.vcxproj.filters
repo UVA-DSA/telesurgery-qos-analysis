@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\VS_GUI_SERVER\CommonDS.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\coordinateSystems.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="PracticalSocket\PracticalSocket.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\stdafx.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mantis_client.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\comm.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\VS_GUI_SERVER\CommonDS.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\coordinateSystems.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="PracticalSocket\PracticalSocket.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\stdafx.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\comm.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\DataDefs.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ITPteleoperation.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{48dc263c-61e4-45d6-a12f-629ae7f96ab2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include">
+      <UniqueIdentifier>{625bc8d7-7c48-4494-a6bd-9f3b5e555417}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
+  </ItemGroup>
+</Project>
