@@ -1,0 +1,11 @@
+5 freefault1
+9 freefault2
+9 freefault3
+9 freefault1
+9 freefault2
+9 freefault3
+9 freefault1
+9 freefault2
+9 freefault3
+
+
