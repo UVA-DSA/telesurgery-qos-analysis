@@ -362,7 +362,7 @@ class PsmEnv(SurRoLGoalEnv):
                 # print(f'left gripper: {points_1}')
                 # print(f'right gripper: {points_2}')
                 if len(intersect)>0:
-                    print(p.getDynamicsInfo(self.obj_id, -1))
+                    #print(p.getDynamicsInfo(self.obj_id, -1))
                     #p.changeDynamics(self.obj_id, -1, mass=0.001)
                     self._activated = idx
                    
@@ -404,6 +404,7 @@ class PsmEnv(SurRoLGoalEnv):
         if self.block_gripper or self.has_object is None:
             return False
         return False
+     
 
     @property
     def action_size(self):

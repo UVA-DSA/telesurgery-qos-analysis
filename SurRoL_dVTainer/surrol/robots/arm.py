@@ -65,7 +65,11 @@ class Arm(object):
         self.limits = limits
         self.tool_T_tip = tool_T_tip  # tool_T_tip offset
         self.scaling = scaling  # scaling factor
-
+        for i in range(len(self.joints)):
+            print(self.joints[i])
+            p.changeDynamics(self.body, self.joints[i], localInertiaDiagonal=[0.05, 0.05, 0.05])
+            # p.changeDynamics(self.body, i, linearDamping=1, angularDamping=1)
+            # p.changeDynamics(self.body, i, lateralFriction=1.0, rollingFriction=1.0, spinningFriction=1.0)
         # update RCM pose and related transformations
         self.wTr, self.rTw = None, None
         self.update_rcm_pose()
