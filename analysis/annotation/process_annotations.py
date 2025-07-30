@@ -157,26 +157,36 @@ class AnnotationProcessor:
                 failure = self.attribute_mappings['7']['options'].get(metadata.get('7', ''), '')
                 
                 mp = self.format_mp_field(verb, instrument, peg, pole)
-                
-                mp_frame_annotations.append({
+            else:
+                # Create default annotation for frames without MP data
+                verb = 'Idle'
+                instrument = ''
+                peg = ''
+                pole = ''
+                error_types = ['NO_ERROR']
+                failure = ''
+                mp = 'Idle'
+            
+            # Always add MP annotation for every frame
+            mp_frame_annotations.append({
+                'frame_id': frame_id,
+                'verb': verb,
+                'instrument': instrument,
+                'peg': peg,
+                'pole': pole,
+                'error_type': ';'.join(error_types),
+                'failure': failure,
+                'mp': mp
+            })
+            
+            # Also add to error annotations if there's an error in MP track
+            if mp_ann and error_ids and error_types != ["NO_ERROR"]:
+                error_frame_annotations.append({
                     'frame_id': frame_id,
-                    'verb': verb,
-                    'instrument': instrument,
-                    'peg': peg,
-                    'pole': pole,
                     'error_type': ';'.join(error_types),
                     'failure': failure,
-                    'mp': mp
+                    'source': 'MP'
                 })
-                
-                # Also add to error annotations if there's an error in MP track
-                if error_ids and error_types != ["NO_ERROR"]:
-                    error_frame_annotations.append({
-                        'frame_id': frame_id,
-                        'error_type': ';'.join(error_types),
-                        'failure': failure,
-                        'source': 'MP'
-                    })
             
             # Process Error annotation
             if error_ann:
@@ -191,7 +201,7 @@ class AnnotationProcessor:
                     'failure': failure,
                     'source': 'Error'
                 })
-            # If no error annotation exists but we need to fill the frame
+            # If no error annotation exists, create a default one
             elif not any(e['frame_id'] == frame_id for e in error_frame_annotations):
                 error_frame_annotations.append({
                     'frame_id': frame_id,
@@ -231,14 +241,34 @@ class AnnotationProcessor:
             return "(Goal)"
         return ""
         
-    def create_annotated_video(self, frame_annotations: List[Dict], output_path: str):
+    def create_annotated_video(self, frame_annotations: List[Dict], output_path: str, crop_coords: Tuple[int, int, int, int] = None):
+        """
+        Create annotated video with optional cropping
+        
+        Args:
+            frame_annotations: List of frame annotations
+            output_path: Output video path
+            crop_coords: Tuple of (top_left_x, top_left_y, bottom_right_x, bottom_right_y) for cropping
+        """
         print(f"Creating annotated video: {output_path}")
         cap = cv2.VideoCapture(self.video_path)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        # Determine output dimensions based on cropping
+        if crop_coords:
+            top_left_x, top_left_y, bottom_right_x, bottom_right_y = crop_coords
+            output_width = bottom_right_x - top_left_x
+            output_height = bottom_right_y - top_left_y
+            print(f"Cropping video from ({original_width}x{original_height}) to ({output_width}x{output_height})")
+            print(f"Crop coordinates: top-left({top_left_x}, {top_left_y}), bottom-right({bottom_right_x}, {bottom_right_y})")
+        else:
+            output_width = original_width
+            output_height = original_height
+            print(f"Using original video dimensions: {output_width}x{output_height}")
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, self.fps, (width, height))
+        out = cv2.VideoWriter(output_path, fourcc, self.fps, (output_width, output_height))
         
         # Define colors for pegs and poles (BGR format)
         color_map = {
@@ -258,21 +288,33 @@ class AnnotationProcessor:
             'failure': (0, 0, 128)         # Dark red for failure
         }
         
-        # Define better fonts and styling
-        main_font = cv2.FONT_HERSHEY_SIMPLEX
-        header_font = cv2.FONT_HERSHEY_DUPLEX
-        title_font_scale = 0.8
-        header_font_scale = 0.7
-        value_font_scale = 0.75
         thickness = 2
         thin_thickness = 1
         
-        # Panel settings - increase width by 25%
+        # Panel settings
         panel_margin = 10
         panel_padding = 10
-        panel_width = 500  # Increased from 340 (340 * 1.25 = 425)
-        line_height = 32
-        header_width = 110
+        
+        # Define fonts and styling - use smaller fonts for cropped videos
+        main_font = cv2.FONT_HERSHEY_SIMPLEX
+        header_font = cv2.FONT_HERSHEY_DUPLEX
+        
+        if crop_coords:
+            # Smaller fonts for cropped videos
+            title_font_scale = 0.6
+            header_font_scale = 0.5
+            value_font_scale = 0.55
+            panel_width = 400  # Smaller panel for cropped videos
+            line_height = 25
+            header_width = 90
+        else:
+            # Original fonts for full videos
+            title_font_scale = 0.8
+            header_font_scale = 0.7
+            value_font_scale = 0.75
+            panel_width = 500
+            line_height = 32
+            header_width = 110
         
         total_frames = len(frame_annotations)
         frame_idx = 0
@@ -286,10 +328,20 @@ class AnnotationProcessor:
             if frame_idx % 100 == 0:  # Progress update every 100 frames
                 print(f"Processing frame {frame_idx}/{total_frames} ({(frame_idx/total_frames*100):.1f}%)")
             
+            # Safety check to ensure we don't go out of bounds
+            if frame_idx >= len(frame_annotations):
+                print(f"Warning: Video has more frames ({frame_idx + 1}) than annotations ({len(frame_annotations)}). Stopping video creation.")
+                break
+            
             ann = frame_annotations[frame_idx]
             
+            # Apply cropping first if specified
+            if crop_coords:
+                top_left_x, top_left_y, bottom_right_x, bottom_right_y = crop_coords
+                frame = frame[top_left_y:bottom_right_y, top_left_x:bottom_right_x]
+            
             # Calculate panel height based on content
-            panel_height = 260  # Base height
+            panel_height = 200 if crop_coords else 260  # Smaller base height for cropped videos
             
             # Add height for errors if present
             if 'error_type' in ann and ann['error_type'] != 'NO_ERROR':
@@ -299,7 +351,7 @@ class AnnotationProcessor:
             # Add height for failure if present
             if 'failure' in ann and ann['failure']:
                 panel_height += line_height
-                
+            
             # Create semi-transparent overlay panel
             overlay = frame.copy()
             cv2.rectangle(overlay, 
@@ -536,6 +588,11 @@ def main():
     parser.add_argument('--error_segment_output', help='Filename for error segment annotations CSV (default: error_segments.csv)', default='error_segments.csv')
     parser.add_argument('--video_output', help='Filename for annotated video (default: annotated_video.mp4)', default='annotated_video.mp4')
     parser.add_argument('--generate_video', help='Generate annotated video (default: False)', action='store_true', default=False)
+    parser.add_argument('--crop_top_left_x', type=int, help='Top-left X coordinate for cropping (default: 73)', default=73)
+    parser.add_argument('--crop_top_left_y', type=int, help='Top-left Y coordinate for cropping (default: 65)', default=65)
+    parser.add_argument('--crop_bottom_right_x', type=int, help='Bottom-right X coordinate for cropping (default: 1832)', default=1832)
+    parser.add_argument('--crop_bottom_right_y', type=int, help='Bottom-right Y coordinate for cropping (default: 960)', default=960)
+    parser.add_argument('--no_crop', help='Disable cropping and use original video dimensions', action='store_true', default=False)
     
     args = parser.parse_args()
     
@@ -559,6 +616,11 @@ def main():
     print(f"Error Segment Annotations CSV: {error_segment_path}")
     if args.generate_video:
         print(f"Output Video: {video_path}")
+        if args.no_crop:
+            print("Cropping: Disabled (using original dimensions)")
+        else:
+            print(f"Cropping: Enabled - top-left({args.crop_top_left_x}, {args.crop_top_left_y}), "
+                  f"bottom-right({args.crop_bottom_right_x}, {args.crop_bottom_right_y})")
     else:
         print("Video generation is disabled")
     print()
@@ -587,7 +649,18 @@ def main():
     # Create annotated video if enabled
     if args.generate_video:
         print("Generating annotated video...")
-        processor.create_annotated_video(mp_annotations, video_path)
+        
+        # Prepare cropping coordinates
+        if args.no_crop:
+            crop_coords = None
+            print("Cropping disabled - using original video dimensions")
+        else:
+            crop_coords = (args.crop_top_left_x, args.crop_top_left_y, 
+                          args.crop_bottom_right_x, args.crop_bottom_right_y)
+            print(f"Using crop coordinates: top-left({args.crop_top_left_x}, {args.crop_top_left_y}), "
+                  f"bottom-right({args.crop_bottom_right_x}, {args.crop_bottom_right_y})")
+        
+        processor.create_annotated_video(mp_annotations, video_path, crop_coords)
     
     print("\nProcessing completed successfully!")
 
