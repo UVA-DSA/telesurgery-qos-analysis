@@ -64,6 +64,166 @@ class SurveyVisualizer:
         
         return tlx_questions
     
+    def calculate_sus_score(self, participant_id: str) -> Tuple[float, List[float]]:
+        """
+        Calculate SUS score for a single participant.
+        
+        SUS Formula:
+        - For odd-numbered questions (1,3,5,7,9): score = (response - 1)
+        - For even-numbered questions (2,4,6,8,10): score = (5 - response)
+        - Total SUS = sum of all scores * 2.5
+        
+        Returns:
+            Tuple of (total_sus_score, list_of_individual_scores)
+        """
+        participant_data = self.df[self.df['Participant ID'] == participant_id]
+        
+        if len(participant_data) == 0:
+            raise ValueError(f"No data found for participant: {participant_id}")
+        
+        sus_columns = [f'Q{i}' for i in range(1, 11)]
+        individual_scores = []
+        
+        for i, col in enumerate(sus_columns, 1):
+            if col not in participant_data.columns:
+                print(f"Warning: Column {col} not found for participant {participant_id}")
+                individual_scores.append(0)
+                continue
+                
+            value = participant_data[col].iloc[0]
+            
+            if pd.isna(value):
+                print(f"Warning: Missing value for {col} for participant {participant_id}")
+                individual_scores.append(0)
+                continue
+            
+            try:
+                # Handle different response formats
+                if isinstance(value, str):
+                    # Extract numeric value from strings like "5 - Strongly Agree"
+                    if ' - ' in value:
+                        value = value.split(' - ')[0]
+                    value = float(value)
+                else:
+                    value = float(value)
+                
+                # Apply SUS scoring formula
+                if i % 2 == 1:  # Odd-numbered questions (1,3,5,7,9)
+                    score = value - 1
+                else:  # Even-numbered questions (2,4,6,8,10)
+                    score = 5 - value
+                
+                individual_scores.append(score)
+                
+            except (ValueError, TypeError) as e:
+                print(f"Error processing {col} for participant {participant_id}: {e}")
+                individual_scores.append(0)
+        
+        # Calculate total SUS score
+        total_score = sum(individual_scores) * 2.5
+        
+        return total_score, individual_scores
+    
+    def calculate_sus_statistics(self, participant_ids: List[str]) -> Dict:
+        """
+        Calculate SUS statistics for multiple participants.
+        
+        Returns:
+            Dictionary containing:
+            - individual_scores: Dict mapping participant_id to their SUS score
+            - mean_score: Average SUS score
+            - median_score: Median SUS score
+            - std_score: Standard deviation of SUS scores
+            - min_score: Minimum SUS score
+            - max_score: Maximum SUS score
+            - sample_size: Number of participants
+        """
+        individual_scores = {}
+        all_scores = []
+        
+        print("\n" + "="*60)
+        print("SYSTEM USABILITY SCORE (SUS) CALCULATION")
+        print("="*60)
+        print("\nSUS Formula:")
+        print("- For odd-numbered questions (1,3,5,7,9): score = (response - 1)")
+        print("- For even-numbered questions (2,4,6,8,10): score = (5 - response)")
+        print("- Total SUS = sum of all scores × 2.5")
+        print("- SUS ranges from 0 to 100")
+        print("\nSUS Score Interpretation:")
+        print("- 0-50: Not acceptable")
+        print("- 50-70: Marginal")
+        print("- 70-85: Acceptable")
+        print("- 85-100: Excellent")
+        print("\n" + "-"*60)
+        
+        for participant_id in participant_ids:
+            try:
+                sus_score, individual_scores_list = self.calculate_sus_score(participant_id)
+                individual_scores[participant_id] = sus_score
+                all_scores.append(sus_score)
+                
+                print(f"\nParticipant: {participant_id}")
+                print(f"Individual question scores: {individual_scores_list}")
+                print(f"Total SUS Score: {sus_score:.2f}")
+                
+                # Interpret the score
+                if sus_score < 50:
+                    interpretation = "Not acceptable"
+                elif sus_score < 70:
+                    interpretation = "Marginal"
+                elif sus_score < 85:
+                    interpretation = "Acceptable"
+                else:
+                    interpretation = "Excellent"
+                print(f"Interpretation: {interpretation}")
+                
+            except Exception as e:
+                print(f"Error calculating SUS for {participant_id}: {e}")
+                continue
+        
+        if not all_scores:
+            raise ValueError("No valid SUS scores could be calculated")
+        
+        # Calculate statistics
+        mean_score = np.mean(all_scores)
+        median_score = np.median(all_scores)
+        std_score = np.std(all_scores)
+        min_score = np.min(all_scores)
+        max_score = np.max(all_scores)
+        
+        print("\n" + "-"*60)
+        print("OVERALL SUS STATISTICS")
+        print("-"*60)
+        print(f"Sample Size: {len(all_scores)} participants")
+        print(f"Mean SUS Score: {mean_score:.2f}")
+        print(f"Median SUS Score: {median_score:.2f}")
+        print(f"Standard Deviation: {std_score:.2f}")
+        print(f"Minimum Score: {min_score:.2f}")
+        print(f"Maximum Score: {max_score:.2f}")
+        
+        # Overall interpretation
+        if mean_score < 50:
+            overall_interpretation = "Not acceptable"
+        elif mean_score < 70:
+            overall_interpretation = "Marginal"
+        elif mean_score < 85:
+            overall_interpretation = "Acceptable"
+        else:
+            overall_interpretation = "Excellent"
+        
+        print(f"Overall Interpretation: {overall_interpretation}")
+        print("="*60)
+        
+        return {
+            'individual_scores': individual_scores,
+            'mean_score': mean_score,
+            'median_score': median_score,
+            'std_score': std_score,
+            'min_score': min_score,
+            'max_score': max_score,
+            'sample_size': len(all_scores)
+        }
+    
     def parse_tlx_scenarios(self, participant_id: str) -> List[str]:
         """Parse TLX scenario labels for a participant."""
         participant_data = self.df[self.df['Participant ID'] == participant_id]
@@ -414,8 +574,12 @@ def visualize_surveys(csv_path: str, participant_ids: List[str], sus_save_path: 
     
     print(f"Creating visualizations for participants: {participant_ids}")
     
+    # Calculate and display SUS scores
+    print("\nCalculating System Usability Scores...")
+    sus_stats = visualizer.calculate_sus_statistics(participant_ids)
+    
     # Create SUS box plot
-    print("Creating SUS box plot...")
+    print("\nCreating SUS box plot...")
     sus_fig = visualizer.create_sus_boxplots(participant_ids)
     if sus_save_path:
         sus_fig.savefig(sus_save_path, dpi=300, bbox_inches='tight')
@@ -429,7 +593,7 @@ def visualize_surveys(csv_path: str, participant_ids: List[str], sus_save_path: 
         print(f"TLX visualization saved to: {tlx_save_path}")
     
     plt.show()
-    return sus_fig, tlx_fig
+    return sus_fig, tlx_fig, sus_stats
 
 
 # Example usage
@@ -438,9 +602,14 @@ if __name__ == "__main__":
     participant_ids = [f"Subject{i}" for i in [1,2,3,4,6,7,8,9,10,12,15,16,17]]  # Add more as needed
     
     # Create separate visualizations
-    sus_fig, tlx_fig = visualize_surveys(
+    sus_fig, tlx_fig, sus_stats = visualize_surveys(
         csv_path="./surveys.csv", 
         participant_ids=participant_ids, 
         sus_save_path="sus_analysis.png",
         tlx_save_path="tlx_analysis.png"
     )
+    
+    # Print summary of SUS results
+    print(f"\nSUS Analysis Summary:")
+    print(f"Mean SUS Score: {sus_stats['mean_score']:.2f}")
+    print(f"Overall Interpretation: {'Excellent' if sus_stats['mean_score'] >= 85 else 'Acceptable' if sus_stats['mean_score'] >= 70 else 'Marginal' if sus_stats['mean_score'] >= 50 else 'Not acceptable'}")
