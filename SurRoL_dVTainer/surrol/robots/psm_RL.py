@@ -93,7 +93,7 @@ class Psm(Arm):
                                     joint,  # jaw joints
                                     p.POSITION_CONTROL,
                                     targetPosition=position,
-                                    force=10.)  # TODO: not sure about the force, need tune
+                                    force=2.)  # TODO: not sure about the force, need tune
         return True
 
     def _get_joint_positions_all(self, abs_input):

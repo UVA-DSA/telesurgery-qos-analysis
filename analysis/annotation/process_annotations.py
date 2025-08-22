@@ -659,7 +659,6 @@ def main():
                           args.crop_bottom_right_x, args.crop_bottom_right_y)
             print(f"Using crop coordinates: top-left({args.crop_top_left_x}, {args.crop_top_left_y}), "
                   f"bottom-right({args.crop_bottom_right_x}, {args.crop_bottom_right_y})")
-        crop_coords = (73,65,1832,960)
         
         processor.create_annotated_video(mp_annotations, video_path, crop_coords)
     

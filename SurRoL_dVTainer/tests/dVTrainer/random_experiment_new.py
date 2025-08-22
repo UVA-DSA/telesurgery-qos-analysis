@@ -208,7 +208,7 @@ def load_session_order(filepath, order_number):
     session_order = session_str.split()
     return session_order
 
-user_num = 2
+user_num = 1
 
 if __name__ == "__main__":
     filename = "network_conditions.txt"

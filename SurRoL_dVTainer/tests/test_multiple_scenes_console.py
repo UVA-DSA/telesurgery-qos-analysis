@@ -2396,8 +2396,10 @@ class SurgicalSimulatorBimanual(SurgicalSimulatorBase):
                 self.psm2_action = np.zeros(5)
                 self.psm1_action[4] = self.last_gripper_0
                 self.psm2_action[4] = self.last_gripper_1
-
             
+            #print(self.env.obj_id)
+            #print(p.getBaseVelocity(self.env.obj_id))
+
             self.env._set_action(np.concatenate([self.psm2_action, self.psm1_action], axis=-1))
             self.env._step_callback()
 

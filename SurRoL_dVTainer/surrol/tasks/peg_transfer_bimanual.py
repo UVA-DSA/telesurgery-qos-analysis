@@ -109,7 +109,12 @@ class BiPegTransfer(PsmsEnv):
                                 globalScaling=self.BLOCK_SCALING)
             self.obj_ids['rigid'].append(obj_id)
             # Set higher inertia to make the block harder to rotate
-            p.changeDynamics(obj_id, -1, localInertiaDiagonal=[0.002, 0.002, 0.002])
+            #p.changeDynamics(obj_id, -1, spinningFriction=0.9)
+            # p.changeDynamics(obj_id, -1, localInertiaDiagonal=[0.02, 0.02, 0.02])
+            #self.obj_id, self.obj_link1, self.obj_link2 = self._blocks[0], 1, 2
+            # p.changeDynamics(obj_id, -1, linearDamping=1, angularDamping=1)
+            # p.changeDynamics(obj_id, -1, lateralFriction=1.0, rollingFriction=1.0, spinningFriction=1.0)
+            #p.changeDynamics(obj_id, -1, mass=0.5)
         self._blocks = np.array(self.obj_ids['rigid'][-num_blocks:])
 
         # change colors
@@ -222,6 +227,7 @@ class BiPegTransfer(PsmsEnv):
         else:
             pose = get_link_pose(self.obj_id, -1)
             return pose[0][2] > self.goal[2] + 0.01 * self.SCALING  # reduce difficulty
+
 
     def get_oracle_action(self, obs) -> np.ndarray:
         """
