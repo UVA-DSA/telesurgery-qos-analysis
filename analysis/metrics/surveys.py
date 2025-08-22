@@ -234,7 +234,6 @@ class SurveyVisualizer:
                 # Calculate average across all participants for this question in this scenario
                 if question_values:
                     avg_value = np.mean(question_values)
-                    print(f"  → Average for {question_name}: {avg_value:.2f} (from {len(question_values)} responses)")
                 else:
                     avg_value = 5  # Default value
                     print(f"  → No valid responses for {question_name}, using default: {avg_value}")
@@ -436,7 +435,7 @@ def visualize_surveys(csv_path: str, participant_ids: List[str], sus_save_path: 
 # Example usage
 if __name__ == "__main__":
     # Example participant IDs - replace with actual IDs from your data
-    participant_ids = ["Zhaomeng Zhang7", "Hamid"]  # Add more as needed
+    participant_ids = [f"Subject{i}" for i in [1,2,3,4,6,7,8,9,10,12,15,16,17]]  # Add more as needed
     
     # Create separate visualizations
     sus_fig, tlx_fig = visualize_surveys(
