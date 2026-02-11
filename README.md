@@ -17,6 +17,7 @@ Code repository: **A Comprehensive Analysis of the Effects of Network Quality of
 
 ### Key parameters for emulated network degradations
 <img src="figures/ParameterTable.png" alt="Key parameters" width="900">
+
 The experiments involved performing the Peg Transfer task under **four primary network conditions**: **Normal** (no degradation), **Packet Loss**, **Delay**, and **Communication Loss**. For each of **the three degradation types**, participants were exposed to **three severity levels (low:1, medium:2, high:3)**. Packet loss, delay and communication loss are denoted as PLM, DLM and CLM, respectively. 
 
 ### How to run the code
