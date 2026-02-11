@@ -16,7 +16,7 @@ Code repository: **A Comprehensive Analysis of the Effects of Network Quality of
 3. Providing **new insights into the effects of different QoS degradation scenarios** on user performance and operation safety, which covers both the task and MP levels, as well as different user proficiency levels and the user experience.
 
 ### Key parameters for emulated network degradations
-![Key parameters](figures/ParameterTable.png)
+<img src="figures/ParameterTable.png" alt="Key parameters" width="600">
 The experiments involved performing the Peg Transfer task under **four primary network conditions**: **Normal** (no degradation), **Packet Loss**, **Delay**, and **Communication Loss**. For each of **the three degradation types**, participants were exposed to **three severity levels (low:1, medium:2, high:3)**. Packet loss, delay and communication loss are denoted as PLM, DLM and CLM, respectively. 
 
 ### How to run the code
