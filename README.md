@@ -57,8 +57,7 @@ Next, select `Basic Robot Skill Training Tasks` -> `Bi-Peg Transfer` in the inte
 
 Here is the demo video for our paper:
 
-<video src="figures/ICRA26_Demo.mp4" controls="controls" style="max-width: 100%;">
-</video>
+[![Watch the video](https://img.youtube.com/vi/Dz9ssGQZePw/0.jpg)](https://youtu.be/Dz9ssGQZePw)
 
 
 ## Citations
