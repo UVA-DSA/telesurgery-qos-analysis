@@ -1,0 +1,90 @@
+{
+  "Random_Loss": {
+    "params": {
+      "r": 0.12
+    }
+  },
+  "GE_Pareto_BLL": {
+    "Good": {
+      "transitions": {
+        "Good": 0.95,
+        "Intermediate1": 0.0,
+        "Bad": 0.05,
+        "Intermediate2": 0.0
+      },
+      "distribution": "pareto",
+      "params": {
+        "alpha": 4.428,
+        "lambda": 1.638
+      }
+    },
+    "Bad": {
+      "transitions": {
+        "Bad": 0.9,
+        "Intermediate2": 0.0,
+        "Good": 0.1,
+        "Intermediate1": 0.0
+      },
+      "distribution": "pareto",
+      "params": {
+        "alpha": 4.966,
+        "lambda": 0.271
+      }
+    },
+    "Intermediate1": {
+      "transitions": {
+        "Intermediate1": 0.0,
+        "Bad": 0.0,
+        "Good": 0.0,
+        "Intermediate2": 0.0
+      },
+      "distribution": "pareto",
+      "params": {
+        "alpha": 0.0,
+        "lambda": 0.0
+      }
+    },
+    "Intermediate2": {
+      "transitions": {
+        "Intermediate2": 0.0,
+        "Good": 0.0,
+        "Bad": 0.0,
+        "Intermediate1": 0.0
+      },
+      "distribution": "pareto",
+      "params": {
+        "alpha": 0.0,
+        "lambda": 0.0
+      }
+    }
+  },
+  "GE_Classic": {
+    "Good": {
+      "transitions": {
+        "Good": 0.95,
+        "Bad": 0.05
+      },
+      "params": {
+        "k": 0.98
+      }
+    },
+    "Bad": {
+      "transitions": {
+        "Good": 0.25,
+        "Bad": 0.75
+      },
+      "params": {
+        "h": 0.4
+      }
+    }
+  },
+  "Communication_Loss": {
+    "params": {
+      "loss_prob": 1.0,
+      "min_loss_length": 0.0,
+      "max_loss_length": 2000.0,
+      "cooldown_period": 1000.0,
+      "unit": "packet"
+    }
+  }
+}
