@@ -4,7 +4,7 @@ Code repository: **A Comprehensive Analysis of the Effects of Network Quality of
 
 <p align="center">
   🌐 <a href="">Project Slides</a>
-  · 📄 <a href="">Paper<[/a](https://arxiv.org/abs/2603.06824)>
+  · 📄 <a href="https://arxiv.org/abs/2603.06824">Paper</a>
   · 🤗 <a href="">Dataset</a>
 </p>
 
