@@ -3,7 +3,8 @@
 Code repository: **A Comprehensive Analysis of the Effects of Network Quality of Service on Robotic Telesurgery**, ICRA 2026
 
 <p align="center">
-  🌐 <a href="">Slides</a>
+  🌐 <a href="https://docs.google.com/presentation/d/1992PA0YrHKjiLA72roGDoc8wZZJMFifI/edit?usp=sharing&ouid=104485478815516918282&rtpof=true&sd=true">Slides</a>
+  · 🌐 <a href="https://docs.google.com/presentation/d/1tRaNemQxdGgU1gutTjw36-un_s0KN6Xn/edit?usp=sharing&ouid=104485478815516918282&rtpof=true&sd=true">Poster</a>
   · 📄 <a href="https://arxiv.org/abs/2603.06824">Paper</a>
   · 🤗 <a href="https://drive.google.com/drive/folders/1PgAFJWsCbqc7uBMu1VyUyXsIU6OLJIdP?usp=sharing">Dataset</a>
 </p>
