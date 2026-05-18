@@ -30,7 +30,39 @@ For the simulation part, clone the `SurRoL_dVTrainer` and go into the folder
 git clone https://github.com/UVA-DSA/teleoperation-simulator.git
 cd teleoperation-simulator/SurRoL_dVTainer
 ```
-Then follow instructions [SurRoL](https://github.com/med-air/SurRoL/tree/SurRoL-v2?tab=readme-ov-file) and [NetFI](https://github.com/UVA-DSA/NetFI) to setup the environment
+Create and activate conda environment 
+```
+conda create -n sim python=3.7 -y
+conda activate sim
+```
+Install SurRoL simulator dependent and other packets 
+```
+pip install -e .
+pip install torch lz4 obs-websocket-py
+cd ext/panda3d-kivy/
+pip install .
+```
+Install NetFI related packets
+```
+cd ../..
+cd tests/dVTrainer/NetFI
+pip install -e .
+```
+
+#### Run Simulator without dVTrainer Console
+After properly setup the simulation environment, you can validate by replaying console data:
+```
+cd ../..
+python multiple_scenes_console_replay.py
+```
+Select `Basic Robot Skill Training Tasks` -> `Bi-Peg Transfer` in the interface
+Next, open a new terminal and go to `tests` folder and run `replay.py`
+```
+cd teleoperation-simulator/SurRoL_dVTrainer/tests
+python replay.py
+```
+You will robotic arms move using recorded console packets
+
 #### Run Simulator with Emulated Network Condition
 This teleoperation setup transmits ITP packets from the console/haptic device to the simulator via UDP. Ensure that a UDP socket connection is established and the correct **IP address and Port** are configured in `SurRoL_dVTrainer/test/dVTrainer/Console.py` and `Net.py`.
 
@@ -45,13 +77,13 @@ The network conditions load from `SurRoL_dVTrainer/test/dVTrainer/network_condit
 
 Run the script `random_experiment_new.py` to automatically update `network_conditions.txt` according to the user study design. 
 ```
-cd SurRoL_dVTrainer/test/dVTrainer
+cd SurRoL_dVTrainer/tests/dVTrainer
 python random_experiment_new.py
 ```
 
 Once the network conditions are properly configured, launch the simulation:
 ```
-cd SurRoL_dVTrainer/test
+cd SurRoL_dVTrainer/tests
 python test_multiple_scenes_console.py
 ```
 
