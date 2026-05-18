@@ -28,7 +28,7 @@ The `Mantis_Client` folder contains the dVTrainer surgeon console code, which ne
 For the simulation part, clone the `SurRoL_dVTrainer` and go into the folder
 ```
 git clone https://github.com/UVA-DSA/teleoperation-simulator.git
-cd teleoperation-simulator/SurRoL_dVTainer
+cd telesurgery-qos-analysis/SurRoL_dVTainer
 ```
 Create and activate conda environment 
 ```
@@ -58,7 +58,7 @@ python multiple_scenes_console_replay.py
 Select `Basic Robot Skill Training Tasks` -> `Bi-Peg Transfer` in the interface
 Next, open a new terminal and go to `tests` folder and run `replay.py`
 ```
-cd teleoperation-simulator/SurRoL_dVTrainer/tests
+cd telesurgery-qos-analysis/SurRoL_dVTrainer/tests
 python replay.py
 ```
 You will robotic arms move using recorded console packets
