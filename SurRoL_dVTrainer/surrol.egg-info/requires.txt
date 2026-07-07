@@ -7,7 +7,7 @@ imageio-ffmpeg
 opencv-python
 roboticstoolbox-python
 sympy
-panda3d==1.10.11
+panda3d==1.10.14
 trimesh
 kivymd
 
