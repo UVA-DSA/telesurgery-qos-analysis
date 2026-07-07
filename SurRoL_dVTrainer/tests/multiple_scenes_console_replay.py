@@ -38,8 +38,8 @@ from surrol.tasks.ecm_env import EcmEnv, goal_distance,reset_camera
 from surrol.robots.ecm import RENDER_HEIGHT, RENDER_WIDTH, FoV
 from surrol.robots.ecm import Ecm
 
-from haptic_src.touch_haptic import initTouch_right, closeTouch_right, getDeviceAction_right, startScheduler, stopScheduler
-from haptic_src.touch_haptic import initTouch_left, closeTouch_left, getDeviceAction_left
+# from haptic_src.touch_haptic import initTouch_right, closeTouch_right, getDeviceAction_right, startScheduler, stopScheduler
+# from haptic_src.touch_haptic import initTouch_left, closeTouch_left, getDeviceAction_left
 from direct.task import Task
 from surrol.utils.pybullet_utils import step
 
@@ -1834,8 +1834,8 @@ class SurgicalSimulator(SurgicalSimulatorBase):
     def __init__(self, env_type, env_params,id=None,demo=None):
         super(SurgicalSimulator, self).__init__(env_type, env_params)
         self.id = id
-        initTouch_right()
-        startScheduler()
+        # initTouch_right()
+        # startScheduler()
         if env_type.ACTION_SIZE != 3 and env_type.ACTION_SIZE != 1:
             self.psm1_action = np.zeros(env_type.ACTION_SIZE)
             self.psm1_action[4] = 0.5
@@ -2006,7 +2006,7 @@ class SurgicalSimulator(SurgicalSimulatorBase):
 
         self.ecm_action = np.zeros(self.ecm_action.shape)
         retrived_action = np.array([0, 0, 0, 0, 0], dtype = np.float32)
-        getDeviceAction_right(retrived_action)
+        # getDeviceAction_right(retrived_action)
         print(f"retrived action is: {retrived_action}")
         if self.demo:
             obs = self.env._get_obs()
@@ -2118,8 +2118,8 @@ class SurgicalSimulator(SurgicalSimulatorBase):
 
     def on_destroy(self):
         # !!! important
-        stopScheduler()
-        closeTouch_right()
+        # stopScheduler()
+        # closeTouch_right()
         self.kivy_ui.stop()
         self.app.win.removeDisplayRegion(self.ui_display_region)
 
