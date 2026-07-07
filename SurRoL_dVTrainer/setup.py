@@ -27,19 +27,19 @@ def install_submodules():
     check_directories()
     print('  -- done')
 
-    # Install submodules
-    print('\n=== Install submodules')
-    os.chdir('./ext/bullet3')
-    bullet_root_dir = os.path.realpath('.')
-    subprocess.check_call([os.path.abspath(sys.executable), "setup.py", "install"])
-    print('  -- pybullet installed')
-    os.chdir('../pybullet_rendering')
-    subprocess.check_call([os.path.abspath(sys.executable), "setup.py", "install", "--bullet_dir", bullet_root_dir])
-    print('  -- pybullet_rendering installed')
-    os.chdir('../panda3d-kivy')
-    subprocess.check_call([os.path.abspath(sys.executable), "setup.py", "install"])
-    print('  -- panda3d-kivy installed')
-    os.chdir('../../')
+    # # Install submodules
+    # print('\n=== Install submodules')
+    # os.chdir('./ext/bullet3')
+    # bullet_root_dir = os.path.realpath('.')
+    # subprocess.check_call([os.path.abspath(sys.executable), "setup.py", "install"])
+    # print('  -- pybullet installed')
+    # os.chdir('../pybullet_rendering')
+    # subprocess.check_call([os.path.abspath(sys.executable), "setup.py", "install", "--bullet_dir", bullet_root_dir])
+    # print('  -- pybullet_rendering installed')
+    # os.chdir('../panda3d-kivy')
+    # subprocess.check_call([os.path.abspath(sys.executable), "setup.py", "install"])
+    # print('  -- panda3d-kivy installed')
+    # os.chdir('../../')
 
 class PostInstallCommand(install):
     def run(self):
@@ -74,7 +74,7 @@ if __name__ == '__main__':
             "opencv-python",
             "roboticstoolbox-python",
             "sympy",
-            "panda3d==1.10.11",
+            "panda3d==1.10.14",
             "trimesh",
             "kivymd"
         ],
