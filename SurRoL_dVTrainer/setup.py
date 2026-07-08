@@ -65,7 +65,7 @@ if __name__ == '__main__':
         ],
         python_requires = '>=3.7',
         install_requires=[
-            "gym>=0.15.6",
+            "gym==0.15.6",
             "numpy>=1.21.1",
             "scipy",
             "pandas",
