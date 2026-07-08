@@ -2,7 +2,7 @@
 # This source code is licensed under the LGPLv3 license found in the
 # LICENSE file in the root directory of this source tree.
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project(pybullet_rendering)
 
 find_program(CCACHE_FOUND ccache)
