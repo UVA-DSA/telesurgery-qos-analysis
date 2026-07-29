@@ -233,17 +233,22 @@ class Panda3DSceneRenderer(BaseRenderer):
         # color_image.shape = (height, width, 4)
         # color_image = np.flipud(color_image)
 
-        requested_format = None
-        tex = self.dr.getScreenshot()
-        # print(f"!!!!left{tex}")
-        if requested_format is None:
-            data = tex.getRamImage()
-        else:
-            data = tex.getRamImageAs(requested_format)
-        color_image = np.frombuffer(data, np.uint8)  # use data.get_data() instead of data in python 2
-        color_image.shape = (tex.getYSize(), tex.getXSize(), tex.getNumComponents())
-        color_image = np.flipud(color_image)
-        color_image = adjust_gamma(color_image,1.8)
+        width, height = scene_view.viewport
+
+        # hacky optimization - only make screenshots if width is high
+        color_image = None
+        if width > 256:
+            requested_format = None
+            tex = self.dr.getScreenshot()
+            # print(f"!!!!left{tex}")
+            if requested_format is None:
+                data = tex.getRamImage()
+            else:
+                data = tex.getRamImageAs(requested_format)
+            color_image = np.frombuffer(data, np.uint8)  # use data.get_data() instead of data in python 2
+            color_image.shape = (tex.getYSize(), tex.getXSize(), tex.getNumComponents())
+            color_image = np.flipud(color_image)
+            color_image = adjust_gamma(color_image,1.8)
 # DUAL ECM STRAT
         # movedTex = self.dr2.getScreenshot()
         # # print(f"!!!!right{tex}")
@@ -276,5 +281,8 @@ class Panda3DSceneRenderer(BaseRenderer):
         #     frame.depth_img[:] = depth_image
         # if mask is not None:
         #     frame.mask_img[:] = mask
+
+        if color_image:
+            frame.color_img[:] = color_image
         
         return True
