@@ -282,7 +282,7 @@ class Panda3DSceneRenderer(BaseRenderer):
         # if mask is not None:
         #     frame.mask_img[:] = mask
 
-        if color_image:
+        if color_image is not None:
             frame.color_img[:] = color_image
         
         return True
